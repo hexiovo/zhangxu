@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>余序 · 报告版式比较</title>
+  <link rel="stylesheet" href="./design-options.css">
+</head>
+<body>
+  <main class="comparison" data-ui>
+    <header class="comparison-head">
+      <div>
+        <a class="wordmark" href="./index.html">余序</a>
+        <h1>报告版式比较</h1>
+        <p>三套版式共用同一份虚构数据，仅用于设计核对；不会进入正式账本首页。</p>
+      </div>
+      <p class="recommendation"><strong>建议采用方案一</strong><span>先看期间走势，再从分类与商家逐层查看来源</span></p>
+    </header>
+
+    <section class="option option-recommended" aria-labelledby="optionOne">
+      <div class="option-title">
+        <div><h2 id="optionOne">账期走势与分类钻取 <span class="option-index">方案一 · 推荐</span></h2></div>
+        <p>适合先核对收支变化，再查看变动来自哪里</p>
+      </div>
+      <div class="mock-shell">
+        <div class="mock-toolbar"><span>统计期间</span><span>2026-08 至 2026-10</span><span>按消费日期</span></div>
+        <div class="mock-overview">
+          <div><span>十月支出</span><strong>¥3,420.00</strong><small>收入 ¥5,150.00　净额 ¥1,730.00</small></div>
+          <div class="mock-chart" aria-label="虚构数据：八月至十月月支出走势">
+            <div class="chart-lines"><i></i><i></i><i></i></div>
+            <svg viewBox="0 0 600 160" role="img" aria-label="月支出依次为3280元、3510元、3420元">
+              <polyline points="30,92 300,42 570,62" fill="none" stroke="currentColor" stroke-width="3" vector-effect="non-scaling-stroke"></polyline>
+              <circle cx="30" cy="92" r="5"></circle><circle cx="300" cy="42" r="5"></circle><circle cx="570" cy="62" r="5"></circle>
+            </svg>
+            <div class="chart-labels"><span>八月 · ¥3,280</span><span>九月 · ¥3,510</span><span>十月 · ¥3,420</span></div>
+          </div>
+        </div>
+        <div class="mock-table-wrap">
+          <table><caption>十月分类支出 · 每行可继续查看流水</caption><thead><tr><th>分类</th><th class="num">支出</th><th class="num">占比</th><th>查看</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">居住</th><td class="num">¥1,600.00</td><td class="num">46.8%</td><td><button type="button" disabled>查看来源</button></td></tr>
+              <tr><th scope="row">餐饮</th><td class="num">¥820.00</td><td class="num">24.0%</td><td><button type="button" disabled>查看来源</button></td></tr>
+              <tr><th scope="row">交通</th><td class="num">¥320.00</td><td class="num">9.4%</td><td><button type="button" disabled>查看来源</button></td></tr>
+              <tr><th scope="row">水电</th><td class="num">¥280.00</td><td class="num">8.2%</td><td><button type="button" disabled>查看来源</button></td></tr>
+              <tr><th scope="row">休闲</th><td class="num">¥400.00</td><td class="num">11.7%</td><td><button type="button" disabled>查看来源</button></td></tr>
+            </tbody><tfoot><tr><th scope="row">合计</th><td class="num">¥3,420.00</td><td class="num">100%</td><td></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <p class="option-note">结构：期间筛选 → 收支概览 → 月度走势及同数表 → 分类表 → 通过授权动作查看来源。适合承接稀疏数据、待确认金额和消费日期 / 扣款日期切换。</p>
+    </section>
+
+    <section class="option" aria-labelledby="optionTwo">
+      <div class="option-title">
+        <div><h2 id="optionTwo">分类比较工作台 <span class="option-index">方案二</span></h2></div>
+        <p>适合以预算分类为主，快速找出期间差异</p>
+      </div>
+      <div class="mock-shell">
+        <div class="mock-toolbar"><span>对比期间</span><span>2026-09　与　2026-10</span><span>按消费日期</span></div>
+        <div class="mock-compare">
+          <div class="compare-title"><span>分类</span><span>九月</span><span>十月</span><span>变化</span></div>
+          <div class="compare-row"><strong>居住</strong><span>¥1,600</span><span>¥1,600</span><span>¥0</span><i style="--bar:100%"></i></div>
+          <div class="compare-row"><strong>餐饮</strong><span>¥900</span><span>¥820</span><span>−¥80</span><i style="--bar:51%"></i></div>
+          <div class="compare-row"><strong>交通</strong><span>¥330</span><span>¥320</span><span>−¥10</span><i style="--bar:20%"></i></div>
+          <div class="compare-row"><strong>水电</strong><span>¥280</span><span>¥280</span><span>¥0</span><i style="--bar:18%"></i></div>
+          <div class="compare-row"><strong>休闲</strong><span>¥400</span><span>¥400</span><span>¥0</span><i style="--bar:25%"></i></div>
+          <p class="compare-total"><span>月支出变化</span><strong>−¥90</strong><span>九月 ¥3,510 · 十月 ¥3,420</span></p>
+        </div>
+      </div>
+      <p class="option-note">结构：对比期间 → 分类差额图 → 同数表 → 单类钻取。重点突出变化，对月度总体节奏和现金流背景呈现较少。</p>
+    </section>
+
+    <section class="option" aria-labelledby="optionThree">
+      <div class="option-title">
+        <div><h2 id="optionThree">纸账月报 <span class="option-index">方案三</span></h2></div>
+        <p>适合保存和回看某个账期的文字摘要</p>
+      </div>
+      <div class="mock-shell paper-ledger">
+        <div class="paper-heading"><span>余序 · 月度摘要</span><strong>2026 年 10 月</strong><span>按消费日期</span></div>
+        <div class="paper-totals"><p><span>收入</span><strong>¥5,150.00</strong></p><p><span>支出</span><strong>¥3,420.00</strong></p><p><span>净额</span><strong>¥1,730.00</strong></p></div>
+        <table><caption>月度支出分类</caption><tbody>
+          <tr><th>居住</th><td>¥1,600.00</td></tr><tr><th>餐饮</th><td>¥820.00</td></tr><tr><th>交通</th><td>¥320.00</td></tr><tr><th>水电</th><td>¥280.00</td></tr><tr><th>休闲</th><td>¥400.00</td></tr>
+        </tbody><tfoot><tr><th>分类合计</th><td>¥3,420.00</td></tr></tfoot></table>
+        <p class="paper-foot">上月支出 ¥3,510.00　·　环比 −¥90.00</p>
+      </div>
+      <p class="option-note">结构：单月标题 → 账期汇总 → 分类清单 → 同期文字说明。阅读安静，但交互钻取和长区间趋势需要跳到其他页面。</p>
+    </section>
+
+    <footer class="comparison-foot"><p>方案核对用的示例数据：三个月收入 ¥5,000 / ¥5,200 / ¥5,150，支出 ¥3,280 / ¥3,510 / ¥3,420；十月分类合计与当月支出一致。以上数字均为虚构，不写入余序账本。</p><a href="./index.html">返回正式账本页面</a></footer>
+    <section class="direction-notes" aria-labelledby="directionHeading">
+      <h2 id="directionHeading">设计方向</h2>
+      <dl><dt>产品</dt><dd>余序把本机账本记录整理成可核对、可追溯的个人收支回顾。</dd>
+        <dt>气质</dt><dd>安静、准确、略带温度。</dd>
+        <dt>使用世界</dt><dd>纸质账页、银行对账单和清晰标记的账期。</dd>
+        <dt>重点画面</dt><dd>月度支出走势与可继续查看来源的分类明细。</dd>
+        <dt>识别细节</dt><dd>每份报告都明确区分消费日期与扣款日期。</dd></dl>
+    </section>
+  </main>
+</body>
+</html>

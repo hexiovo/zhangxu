@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>余序 · 本机账本</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="./app.css">
+  <script src="./bookkeeping.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#mainContent">跳到主要内容</a>
+
+  <section class="login-screen" id="loginScreen" aria-labelledby="loginTitle">
+    <div class="login-panel">
+      <a class="brand brand-large" href="/" aria-label="余序，本机个人账本">
+        <img class="brand-mark" src="./yuxu-icon.png" width="44" height="44" alt="">
+        <span><strong>余序</strong><small>本机个人账本</small></span>
+      </a>
+      <div class="login-copy">
+        <h1 id="loginTitle">登录账本</h1>
+        <p>使用你的本机账号查看账本。网页只连接这台电脑上的服务。</p>
+      </div>
+      <form id="loginForm" autocomplete="on">
+        <label for="username">用户名</label>
+        <input id="username" name="username" type="text" autocomplete="username" required>
+        <label for="password">密码</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button class="button button-primary button-wide" type="submit">登录</button>
+      </form>
+      <button class="button button-secondary button-wide login-registration" id="openRegistration" type="button" aria-haspopup="dialog" hidden>注册本机账号</button>
+      <p class="form-message review-link-login-note" id="reviewLinkLoginNote" hidden>登录后将核验这条本机查看链接及其账本权限。</p>
+      <p class="form-message" id="loginMessage" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <dialog class="entry-dialog" id="registrationDialog" aria-labelledby="registrationTitle">
+    <form id="registrationForm">
+      <div class="dialog-head">
+        <div>
+          <h2 id="registrationTitle">注册本机账号</h2>
+          <p class="panel-subtitle" id="registrationPasswordHint">两位使用者各有自己的独立账本。密码至少填写 1 个字符。</p>
+        </div>
+        <button class="icon-button" type="button" data-close-registration aria-label="关闭">×</button>
+      </div>
+      <fieldset class="schema-fieldset">
+        <legend>使用者 1</legend>
+        <div class="schema-fieldset-body">
+          <label>用户名 <input name="username1" autocomplete="section-first username" maxlength="80" required autofocus></label>
+          <label>账本显示名 <input name="accountName1" autocomplete="off" maxlength="80" required></label>
+          <label>密码 <input name="password1" type="password" autocomplete="section-first new-password" maxlength="256" aria-describedby="registrationPasswordHint" required></label>
+          <label>确认密码 <input name="repeatPassword1" type="password" autocomplete="section-first new-password" maxlength="256" required></label>
+        </div>
+      </fieldset>
+      <fieldset class="schema-fieldset">
+        <legend>使用者 2</legend>
+        <div class="schema-fieldset-body">
+          <label>用户名 <input name="username2" autocomplete="section-second username" maxlength="80" required></label>
+          <label>账本显示名 <input name="accountName2" autocomplete="off" maxlength="80" required></label>
+          <label>密码 <input name="password2" type="password" autocomplete="section-second new-password" maxlength="256" aria-describedby="registrationPasswordHint" required></label>
+          <label>确认密码 <input name="repeatPassword2" type="password" autocomplete="section-second new-password" maxlength="256" required></label>
+        </div>
+      </fieldset>
+      <div class="schema-fieldset-body">
+        <label>本机维护者
+          <select name="maintenanceUser" required aria-describedby="registrationMaintenanceHint">
+            <option value="" selected disabled>请选择</option>
+            <option value="0">使用者 1</option>
+            <option value="1">使用者 2</option>
+          </select>
+          <span class="panel-subtitle" id="registrationMaintenanceHint">负责本机备份和恢复。</span>
+        </label>
+        <label>支出管理员
+          <select name="adminUser" aria-describedby="registrationAdminHint">
+            <option value="">不设置</option>
+            <option value="0">使用者 1</option>
+            <option value="1">使用者 2</option>
+          </select>
+          <span class="panel-subtitle" id="registrationAdminHint">可查看另一账本的支出汇总和目标进度。</span>
+        </label>
+      </div>
+      <p class="form-message" id="registrationMessage" role="status" aria-live="polite"></p>
+      <div class="dialog-actions">
+        <button class="button button-quiet" type="button" data-close-registration>取消</button>
+        <button class="button button-primary" type="submit">注册</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="app-shell" id="appShell" hidden>
+    <aside class="sidebar" aria-label="主导航">
+      <a class="brand" href="#overview" aria-label="余序首页">
+        <img class="brand-mark" src="./yuxu-icon.png" width="36" height="36" alt="">
+        <span><strong>余序</strong><small>个人账本</small></span>
+      </a>
+      <div class="ledger-context">
+        <span class="account-label">当前账本</span>
+        <strong id="accountName">-</strong>
+        <label class="account-picker-wrap" id="accountPickerWrap" hidden>
+          <span class="visually-hidden">选择已授权账本</span>
+          <select id="accountPicker" aria-label="选择已授权账本"></select>
+        </label>
+      </div>
+      <nav class="primary-nav" aria-label="账本页面">
+        <button type="button" class="nav-item is-active" data-view="overview" aria-current="page">
+          <span>总览</span>
+        </button>
+        <button type="button" class="nav-item" data-view="transactions">
+          <span>流水与核账</span>
+        </button>
+        <button type="button" class="nav-item" data-view="visualization" hidden>
+          <span>数据可视化</span>
+        </button>
+        <button type="button" class="nav-item" data-view="reports" hidden>
+          <span>报表分析</span>
+        </button>
+        <button type="button" class="nav-item" data-view="movements" hidden>
+          <span>支付与往来</span>
+        </button>
+        <button type="button" class="nav-item" data-view="planning" hidden>
+          <span>项目预算与目标</span>
+        </button>
+        <button type="button" class="nav-item" data-view="recurring" hidden>
+          <span>定期提醒</span>
+        </button>
+        <button type="button" class="nav-item" data-view="maintenance" hidden>
+          <span>导出与维护</span>
+        </button>
+        <button type="button" class="nav-item" data-view="security" hidden>
+          <span>授权与安全</span>
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <p class="account-caption">已登录</p>
+        <strong id="signedInName">-</strong>
+        <button class="button button-quiet button-wide" id="logoutButton" type="button">退出登录</button>
+        <button class="restore-status" id="restoreStatusButton" type="button" hidden>恢复运行状态面板</button>
+      </div>
+    </aside>
+
+    <div class="main-wrap">
+      <header class="mobile-bar">
+        <button class="menu-button" id="openNavigation" type="button" aria-haspopup="dialog" aria-label="打开导航"><span class="menu-glyph" aria-hidden="true"></span></button>
+        <a class="brand brand-mobile" href="#overview">
+          <img class="brand-mark" src="./yuxu-icon.png" width="28" height="28" alt="">
+          <strong>余序</strong>
+        </a>
+        <button class="button button-primary button-small" id="mobileAddButton" type="button">记一笔</button>
+      </header>
+
+      <main id="mainContent" tabindex="-1">
+        <header class="page-head">
+          <div>
+            <h1 id="pageTitle">本月总览</h1>
+            <p class="page-subtitle" id="pageSubtitle">本月收支与分类支出</p>
+          </div>
+          <div class="page-actions">
+            <button class="button button-primary" id="addButton" type="button">记一笔</button>
+          </div>
+        </header>
+
+        <section class="panel review-link-panel" id="reviewLinkPanel" aria-labelledby="reviewLinkHeading" hidden>
+          <div class="panel-head"><div><h2 id="reviewLinkHeading">本机查看链接</h2><p class="panel-subtitle" id="reviewLinkSummary"></p></div></div>
+          <div id="reviewLinkDetails"></div>
+          <p class="view-message" id="reviewLinkMessage" role="status" aria-live="polite"></p>
+        </section>
+
+        <form class="period-form" id="periodForm" aria-label="统计期间">
+          <label>
+            <span>开始日期</span>
+            <input id="periodStart" name="start_date" type="date" required>
+          </label>
+          <label>
+            <span>结束日期</span>
+            <input id="periodEnd" name="end_date" type="date" required>
+          </label>
+          <label>
+            <span>日期口径</span>
+            <select id="periodDateBasis" name="date_basis"><option value="occurred_on">消费日期</option><option value="charged_on">扣款日期</option></select>
+          </label>
+          <button class="button button-secondary" type="submit">应用日期</button>
+          <p class="view-message period-message" id="periodMessage" role="status" aria-live="polite"></p>
+          <div class="viz-controls period-presets" id="periodPresets" role="group" aria-label="快捷时间范围">
+            <button class="viz-option" type="button" data-period-preset="month" aria-pressed="true">本月</button>
+            <button class="viz-option" type="button" data-period-preset="previous" aria-pressed="false">上月</button>
+            <button class="viz-option" type="button" data-period-preset="days7" aria-pressed="false">近 7 天</button>
+            <button class="viz-option" type="button" data-period-preset="days30" aria-pressed="false">近 30 天</button>
+            <button class="viz-option" type="button" data-period-preset="year" aria-pressed="false">今年</button>
+          </div>
+        </form>
+
+        <section class="view-panel" id="overviewView" aria-labelledby="overviewHeading">
+          <h2 class="visually-hidden" id="overviewHeading">本月总览</h2>
+          <div class="lead-card panel" id="overviewSummary" aria-live="polite">
+            <div class="skeleton-line skeleton-short" aria-hidden="true"></div>
+            <div class="skeleton-line skeleton-number" aria-hidden="true"></div>
+            <p class="loading-copy">正在读取当前期间…</p>
+          </div>
+          <section class="panel monthly-budget-panel" id="overviewBudgetPanel" aria-labelledby="overviewBudgetHeading" hidden>
+            <div class="panel-head">
+              <div>
+                <h2 id="overviewBudgetHeading">分类月预算</h2>
+                <p class="panel-subtitle" id="budgetOverviewPeriod">按消费日统计当月预算。</p>
+              </div>
+              <button class="text-button" id="openPlanningFromBudget" type="button" data-open-view="planning">管理预算</button>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table budget-overview-table">
+                <caption class="visually-hidden">各分类本月预算、实际支出与剩余金额</caption>
+                <thead><tr><th scope="col">分类</th><th scope="col" class="num">可用预算</th><th scope="col" class="num">已用</th><th scope="col" class="num">待核</th><th scope="col" class="num">剩余</th></tr></thead>
+                <tbody id="budgetOverviewRows"><tr><td colspan="5" class="empty-cell">正在读取分类预算…</td></tr></tbody>
+              </table>
+            </div>
+            <div class="budget-period-progress" id="budgetPeriodProgress" hidden>
+              <div class="budget-period-progress-copy"><span id="budgetElapsedLabel">周期进度</span><span class="num" id="budgetElapsedValue">-</span></div>
+              <progress id="budgetElapsedProgress" max="1" value="0" aria-label="当前预算周期已过比例"></progress>
+            </div>
+            <p class="view-message" id="budgetOverviewMessage" role="status" aria-live="polite"></p>
+          </section>
+          <div class="overview-grid" id="overviewGrid">
+            <section class="panel overview-category-panel" aria-labelledby="overviewCategoryHeading">
+              <div class="panel-head">
+                <div>
+                  <h2 id="overviewCategoryHeading">分类支出</h2>
+                  <p class="panel-subtitle">各分类的金额与占比</p>
+                </div>
+                <button class="text-button" id="openVisualizationFromOverview" type="button" data-open-view="visualization" hidden>查看图表</button>
+              </div>
+              <div class="table-scroll">
+                <table class="data-table category-table">
+                  <caption class="visually-hidden">所选期间的分类支出摘要</caption>
+                  <thead><tr><th scope="col">分类</th><th scope="col" class="num">金额</th><th scope="col" class="num">占比</th></tr></thead>
+                  <tbody id="overviewCategoryRows"><tr><td colspan="3" class="empty-cell">正在读取分类…</td></tr></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel recent-panel" id="recentPanel" aria-labelledby="recentHeading">
+              <div class="panel-head">
+                <div>
+                  <h2 id="recentHeading">最近流水</h2>
+                  <p class="panel-subtitle" id="recentSubtitle">按日期从新到旧</p>
+                </div>
+                <button class="text-button" type="button" data-open-view="transactions">查看全部</button>
+              </div>
+              <div class="table-scroll">
+                <table class="data-table transaction-table">
+                  <caption class="visually-hidden">最近的账本流水</caption>
+                  <thead><tr><th scope="col">项目</th><th scope="col">日期</th><th scope="col" class="num">金额</th></tr></thead>
+                  <tbody id="recentRows"><tr><td colspan="3" class="empty-cell">正在读取流水…</td></tr></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+          <p class="view-message" id="overviewMessage" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="view-panel" id="transactionsView" aria-labelledby="transactionsHeading" hidden>
+          <h2 class="visually-hidden" id="transactionsHeading">流水</h2>
+          <section class="maintenance-file-workspace panel" id="localBookkeepingPanel" aria-labelledby="localBookkeepingHeading" hidden>
+            <h2 id="localBookkeepingHeading">凭证记账</h2>
+            <div class="file-input-row">
+              <label class="file-picker-label" for="localBookkeepingFile">选择图片或 PDF<input id="localBookkeepingFile" type="file" accept="image/png,image/jpeg,image/webp,application/pdf"></label>
+              <button class="button button-primary" id="localBookkeepingStage" type="button">识别并保存草稿</button>
+              <button class="button button-secondary" id="localBookkeepingList" type="button">查看待办</button>
+            </div>
+            <p class="form-message" id="localBookkeepingMessage" role="status" aria-live="polite"></p>
+            <div id="localBookkeepingResult"></div>
+          </section>
+          <section class="feature-workspace panel" id="featureWorkspace-flow" data-feature-group="flow" hidden>
+            <div class="panel-head"><div><h2 id="flowWorkspaceHeading">核账与流水操作</h2><p class="panel-subtitle" id="flowWorkspaceSubtitle">使用中文表单处理当前账号可用的核对操作。</p></div></div>
+            <div class="feature-actions" id="featureActions-flow"></div>
+            <p class="view-message" id="featureEmpty-flow" hidden>当前账号暂无此类可用操作。</p>
+            <section class="feature-result panel" id="featureResult-flow" aria-live="polite" hidden></section>
+          </section>
+          <form class="filter-panel panel" id="filterForm">
+            <div class="filter-heading">
+              <div><h2>筛选流水</h2><p class="panel-subtitle">条件同时生效，可继续查看后续记录。</p></div>
+              <div class="filter-actions">
+                <button class="text-button mobile-filter-toggle" id="toggleFiltersButton" type="button" aria-expanded="true" aria-controls="filterFields">收起条件</button>
+                <button class="text-button" id="clearFiltersButton" type="reset">清除筛选</button>
+              </div>
+            </div>
+            <div class="filter-fields" id="filterFields">
+              <label><span>开始日期</span><input name="start_date" type="date"></label>
+              <label><span>结束日期</span><input name="end_date" type="date"></label>
+              <label><span>日期口径</span><select name="date_basis" id="filterDateBasis"><option value="occurred_on">消费日期</option><option value="charged_on">扣款日期</option></select></label>
+              <label><span>收支方向</span><select name="kind"><option value="">全部</option><option value="expense">支出</option><option value="income">收入</option></select></label>
+              <label><span>分类</span><select name="category_id" id="filterCategory"><option value="">全部分类</option></select></label>
+              <label><span>关键词</span><input name="keyword" type="search" autocomplete="off"></label>
+              <label><span>标签</span><input name="tag" type="text" autocomplete="off"></label>
+              <label><span>最低金额（元）</span><input name="amount_min" type="text" inputmode="decimal" autocomplete="off"></label>
+              <label><span>最高金额（元）</span><input name="amount_max" type="text" inputmode="decimal" autocomplete="off"></label>
+            </div>
+            <button class="button button-secondary" type="submit">应用筛选</button>
+          </form>
+          <section class="panel transaction-list-panel" id="transactionListPanel" aria-labelledby="listHeading">
+            <div class="panel-head">
+              <div><h2 id="listHeading">流水明细</h2><p class="panel-subtitle" id="listSummary">-</p></div>
+              <button class="button button-secondary" id="listAddButton" type="button">记一笔</button>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table full-table">
+                <caption class="visually-hidden">筛选后的账本流水，可编辑单笔记录</caption>
+                <thead><tr><th scope="col">项目</th><th scope="col">分类</th><th scope="col">日期</th><th scope="col">状态</th><th scope="col" class="num">金额</th><th scope="col"><span class="visually-hidden">操作</span></th></tr></thead>
+                <tbody id="transactionRows"><tr><td colspan="6" class="empty-cell">请应用筛选条件。</td></tr></tbody>
+              </table>
+            </div>
+            <button class="button button-secondary load-more" id="loadMoreButton" type="button" hidden>加载更多</button>
+            <p class="view-message" id="transactionsMessage" role="status" aria-live="polite"></p>
+          </section>
+        </section>
+
+        <section class="view-panel visualization-view" id="visualizationView" aria-label="数据可视化" hidden>
+          <div class="visualization-grid" id="visualizationGrid">
+            <section class="panel quick-report-panel" id="quickReportPanel" aria-labelledby="quickReportHeading" hidden>
+              <div class="panel-head">
+                <h2 id="quickReportHeading">支出趋势与对比</h2>
+              </div>
+              <div class="quick-report-toolbar">
+                <div class="viz-controls" id="quickReportChoices" role="group" aria-label="支出图表类型">
+                  <button class="viz-option" type="button" data-quick-report="trend" aria-pressed="false">支出走势</button>
+                  <button class="viz-option" type="button" data-quick-report="compare" aria-pressed="false">期间对比</button>
+                </div>
+                <label class="quick-trend-unit" id="quickTrendUnitLabel" hidden>
+                  <span>汇总方式</span>
+                  <select id="quickTrendUnit"><option value="day">按日</option><option value="week" selected>按周</option><option value="month">按月</option></select>
+                </label>
+                <label class="quick-compare-mode" id="quickCompareModeLabel" hidden>
+                  <span>对照期间</span>
+                  <select id="quickCompareMode">
+                    <option value="previous_equal_length">等长前期</option>
+                    <option value="previous_calendar_year">去年同期</option>
+                    <option value="previous_financial_cycle">上一工资周期</option>
+                    <option value="explicit">自选对照</option>
+                  </select>
+                </label>
+                <div class="quick-compare-range" id="quickCompareRange" hidden>
+                  <label><span>对照开始日期</span><input id="quickCompareStart" type="date"></label>
+                  <label><span>对照结束日期</span><input id="quickCompareEnd" type="date"></label>
+                  <button class="button button-secondary" id="applyQuickCompareRange" type="button">应用自选日期</button>
+                </div>
+              </div>
+              <p id="quickReportMessage" class="view-message" role="status" aria-live="polite"></p>
+              <div id="quickReportResult" hidden></div>
+            </section>
+            <section class="panel category-panel" id="categoryPanel" data-category-display="pie" aria-labelledby="categoryHeading">
+              <div class="panel-head">
+                <div>
+                  <h2 id="categoryHeading">分类支出</h2>
+                </div>
+              </div>
+              <div class="category-toolbar">
+                <label class="report-category-filter" id="reportCategoryFilterLabel">
+                  <span>按分类筛选</span>
+                  <select id="reportCategoryFilter"><option value="">全部分类</option></select>
+                </label>
+                <div class="viz-controls category-display" id="categoryDisplay" role="group" aria-label="分类支出显示方式">
+                  <button class="viz-option" type="button" data-category-display="pie" aria-pressed="true">环形图</button>
+                  <button class="viz-option" type="button" data-category-display="bars" aria-pressed="false">条形图</button>
+                  <button class="viz-option" type="button" data-category-display="table" aria-pressed="false">表格</button>
+                </div>
+              </div>
+              <div class="category-selection" id="categorySelection" hidden>
+                <span id="selectedCategoryLabel" class="visually-hidden" aria-live="polite"></span>
+                <button class="text-button" id="clearCategorySelection" type="button">清除分类</button>
+                <button class="text-button" id="openCategoryTransactions" type="button">查看分类流水</button>
+              </div>
+              <section class="category-composition" id="categoryComposition" aria-label="分类支出环形图和图例" hidden></section>
+              <div class="table-scroll">
+                <table class="data-table category-table">
+                  <caption class="visually-hidden">分类支出金额、占比和快捷筛选</caption>
+                  <thead><tr><th scope="col">分类</th><th scope="col" class="num">支出</th><th scope="col" class="num">占比</th></tr></thead>
+                  <tbody id="categoryRows">
+                    <tr><td colspan="3" class="empty-cell">正在读取分类…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+          <details class="panel annual-calendar-panel viz-disclosure" id="annualCalendarPanel" aria-labelledby="annualCalendarHeading" hidden>
+            <summary id="annualCalendarHeading">年度支出日历</summary>
+            <p class="panel-subtitle" id="annualCalendarSubtitle">按日查看已记支出与待核记录。</p>
+            <div class="annual-calendar-controls">
+              <label for="annualCalendarYear"><span>统计年度</span><input id="annualCalendarYear" type="number" min="1" max="9999" step="1" required></label>
+              <button class="button button-secondary" id="loadAnnualCalendarButton" type="button">查看年度</button>
+            </div>
+            <div class="calendar-status-key" aria-label="日历状态">
+              <span><i class="calendar-key-mark is-empty" aria-hidden="true"></i>无记录</span>
+              <span><i class="calendar-key-mark is-recorded-zero" aria-hidden="true"></i>已记录零支出</span>
+              <span><i class="calendar-key-mark is-pending" aria-hidden="true"></i>待核</span>
+              <span><i class="calendar-key-mark is-amount" aria-hidden="true"></i>已记支出</span>
+            </div>
+            <p class="view-message" id="annualCalendarMessage" role="status" aria-live="polite"></p>
+            <div class="annual-calendar-grid" id="annualCalendarGrid"></div>
+            <section class="calendar-day-detail" id="calendarDayDetail" aria-labelledby="calendarDayHeading" hidden>
+              <div class="panel-head"><div><h3 id="calendarDayHeading">所选日期流水</h3><p class="panel-subtitle" id="calendarDaySummary"></p></div><button class="text-button" id="calendarFullDetails" type="button" hidden>在流水页查看全部</button></div>
+              <div class="table-scroll"><table class="data-table full-table"><caption class="visually-hidden">所选日期的账本流水</caption><thead><tr><th scope="col">项目</th><th scope="col">分类</th><th scope="col">日期</th><th scope="col">状态</th><th scope="col" class="num">金额</th><th scope="col">操作</th></tr></thead><tbody id="calendarDayRows"></tbody></table></div>
+              <p class="view-message" id="calendarDayMessage" role="status" aria-live="polite"></p>
+            </section>
+          </details>
+          <details class="panel saved-insight-views viz-disclosure" id="savedInsightViewsPanel" aria-labelledby="savedInsightViewsHeading" hidden>
+            <summary id="savedInsightViewsHeading">常看视图</summary>
+            <p class="panel-subtitle">保存当前的期间、分类与图表设置。</p>
+            <form class="saved-view-form" id="savedInsightViewForm">
+              <label for="insightViewName"><span>视图名称</span><input id="insightViewName" maxlength="80" required autocomplete="off"></label>
+              <button class="button button-secondary" type="submit">保存当前视图</button>
+            </form>
+            <p class="view-message" id="savedInsightViewMessage" role="status" aria-live="polite"></p>
+            <ul class="saved-insight-view-list" id="savedInsightViewRows"></ul>
+          </details>
+        </section>
+
+        <section class="view-panel" id="reportsView" aria-labelledby="reportsHeading" hidden>
+          <h2 class="visually-hidden" id="reportsHeading">报表分析</h2>
+          <section class="report-summary panel" id="reportSummary">
+            <div class="panel-head"><div><h2>期间摘要</h2><p class="panel-subtitle" id="reportPeriodLabel">-</p></div></div>
+            <div class="report-metrics" id="reportMetrics"><p class="empty-cell">正在读取摘要…</p></div>
+          </section>
+          <section class="panel report-category-panel" aria-labelledby="reportCategoryHeading">
+            <div class="panel-head"><div><h2 id="reportCategoryHeading">分类构成</h2><p class="panel-subtitle">金额按同一期间汇总。</p></div></div>
+            <div class="table-scroll"><table class="data-table report-table"><caption class="visually-hidden">所选期间各分类的支出金额和占比</caption><thead><tr><th scope="col">分类</th><th scope="col" class="num">支出</th><th scope="col" class="num">占比</th></tr></thead><tbody id="reportCategoryRows"><tr><td colspan="3" class="empty-cell">正在读取分类…</td></tr></tbody><tfoot id="reportCategoryFoot"></tfoot></table></div>
+          </section>
+          <section class="insight-workspace panel" data-feature-group="insights" aria-labelledby="insightToolsHeading">
+            <div class="panel-head"><div><h2 id="insightToolsHeading">趋势、比较与月报</h2><p class="panel-subtitle">按同一账本和日期口径查看交叉分析；可继续查看安全流水字段。</p></div></div>
+            <div class="feature-actions" id="featureActions-insights"></div>
+            <p class="view-message" id="featureEmpty-insights" hidden>当前账号暂无此类可用报表。</p>
+            <section class="feature-result panel" id="featureResult-insights" aria-live="polite" hidden></section>
+          </section>
+          <p class="view-message" id="reportsMessage" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="view-panel" id="movementsView" aria-labelledby="movementsHeading" hidden>
+          <h2 class="visually-hidden" id="movementsHeading">支付与往来</h2>
+          <section class="feature-workspace panel" data-feature-group="movements">
+            <div class="panel-head"><div><h2>支付与往来</h2><p class="panel-subtitle">记录和核对款项、应收应付及相关往来。</p></div></div>
+            <section class="balance-check-panel" id="paymentBalanceCheckPanel" aria-labelledby="paymentBalanceHeading" hidden>
+              <div class="panel-head"><div><h3 id="paymentBalanceHeading">核对账户余额</h3><p class="panel-subtitle">按选择日期比较账面与实测金额；信用卡正数表示欠款。</p></div><button class="button button-quiet" id="refreshBalanceCheckButton" type="button">读取最近核对</button></div>
+              <form class="balance-check-form" id="paymentBalanceCheckForm">
+                <label><span>支付账户</span><select id="balanceCheckAccount" required><option value="">正在读取账户…</option></select></label>
+                <label><span>核对日期</span><input id="balanceCheckDate" type="date" required></label>
+                <label><span>实测余额</span><input id="balanceCheckActual" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 1234.56" required></label>
+                <button class="button button-secondary" id="recordBalanceCheckButton" type="submit">保存核对</button>
+              </form>
+              <p class="form-message" id="balanceCheckMessage" role="status" aria-live="polite"></p>
+              <dl class="balance-check-result" id="balanceCheckResult" hidden></dl>
+            </section>
+            <div class="feature-actions" id="featureActions-movements"></div>
+            <p class="view-message" id="featureEmpty-movements" hidden>当前账号暂无此类可用操作。</p>
+            <section class="feature-result panel" id="featureResult-movements" aria-live="polite" hidden></section>
+          </section>
+        </section>
+
+        <section class="view-panel" id="planningView" aria-labelledby="planningHeading" hidden>
+          <h2 class="visually-hidden" id="planningHeading">项目预算与目标</h2>
+          <section class="feature-workspace panel" data-feature-group="planning">
+            <div class="panel-head"><div><h2 id="planningPanelHeading">项目、预算与目标</h2><p class="panel-subtitle" id="planningPanelSubtitle">为项目、周期预算和储蓄目标建立可查询的计划。</p></div></div>
+            <div class="feature-actions" id="featureActions-planning"></div>
+            <p class="view-message" id="featureEmpty-planning" hidden>当前账号暂无此类可用操作。</p>
+            <section class="feature-result panel" id="featureResult-planning" aria-live="polite" hidden></section>
+          </section>
+        </section>
+
+        <section class="view-panel" id="recurringView" aria-labelledby="recurringHeading" hidden>
+          <h2 class="visually-hidden" id="recurringHeading">定期提醒</h2>
+          <section class="feature-workspace panel" data-feature-group="recurring">
+            <div class="panel-head"><div><h2>定期提醒</h2><p class="panel-subtitle">管理已配置的周期规则和到期提醒。</p></div></div>
+            <div class="feature-actions" id="featureActions-recurring"></div>
+            <p class="view-message" id="featureEmpty-recurring" hidden>当前账号暂无此类可用操作。</p>
+            <section class="feature-result panel" id="featureResult-recurring" aria-live="polite" hidden></section>
+          </section>
+        </section>
+
+        <section class="view-panel" id="maintenanceView" aria-labelledby="maintenanceHeading" hidden>
+          <h2 class="visually-hidden" id="maintenanceHeading">导出与维护</h2>
+          <section class="maintenance-file-workspace panel" id="csvImportWorkspace" aria-labelledby="importHeading" hidden>
+            <div class="panel-head"><div><h2 id="importHeading">CSV 导入与对账</h2><p class="panel-subtitle">选取本机文件后，可普通导入或按日期窗口与账本对账；预览后才会提交写入。</p></div></div>
+            <div class="file-input-row">
+              <label class="file-picker-label" for="csvImportFile">选择 CSV 文件<input id="csvImportFile" type="file" accept=".csv,text/csv" aria-describedby="csvImportHelp"></label>
+              <button class="button button-secondary" id="csvReadColumnsButton" type="button">读取表头</button>
+            </div>
+            <p class="schema-help" id="csvImportHelp">支持 UTF-8 和 GB18030 CSV，最多 100 条数据行、5 MiB；导入前请确认列名与金额单位。只发送文件内容，不读取本机文件路径。</p>
+            <p class="form-message" id="csvImportMessage" role="status" aria-live="polite"></p>
+            <div class="csv-mode-switch" role="group" aria-label="CSV 工作方式">
+              <button class="button button-secondary" id="csvModeImport" type="button" aria-pressed="true">普通导入</button>
+              <button class="button button-secondary" id="csvModeReconcile" type="button" aria-pressed="false">对账</button>
+            </div>
+            <div id="csvImportMapping" class="import-mapping" hidden></div>
+            <section class="csv-template-controls" id="csvTemplateControls" hidden aria-label="CSV 来源模板">
+              <label><span>来源模板</span><select id="csvTemplateSelect"><option value="">不使用模板</option></select></label>
+              <button class="button button-quiet" id="saveCsvTemplateButton" type="button">保存当前映射为模板</button>
+              <button class="button button-quiet" id="deleteCsvTemplateButton" type="button" hidden>删除所选模板</button>
+              <p class="schema-help" id="csvTemplateMessage" role="status" aria-live="polite">表头签名匹配时才自动套用。表头变化后请重新映射，再明确保存新版本。</p>
+            </section>
+            <div class="file-input-row import-preview-row" id="csvImportOptions" hidden>
+              <label><span>日期格式</span><select id="csvDateFormat" required><option value="">请选择</option><option value="iso">年-月-日</option><option value="slash">斜线日期</option><option value="compact">紧凑数字日期</option></select></label>
+              <label><span>金额单位</span><select id="csvAmountUnit" required><option value="">请选择</option><option value="yuan">元</option><option value="fen">分</option></select></label>
+              <label class="csv-import-only"><span>重复记录处理</span><select id="csvDuplicatePolicy"></select></label>
+              <label><span>账单来源</span><select id="csvStatementProvider"><option value="">自动识别或通用 CSV</option><option value="wechat">微信支付</option><option value="alipay">支付宝</option><option value="bank">银行 / 信用卡</option><option value="other">其他</option></select></label>
+              <label class="csv-reconcile-only"><span>对账开始日期</span><input id="csvReconcileStartDate" type="date"></label>
+              <label class="csv-reconcile-only"><span>对账结束日期</span><input id="csvReconcileEndDate" type="date"></label>
+              <label class="csv-reconcile-only"><span>支付账户（可选）</span><select id="csvReconcilePaymentAccount"><option value="">当前账本全部流水</option></select></label>
+              <button class="button button-secondary csv-import-only" id="csvPreviewButton" type="button">生成导入预览</button>
+              <button class="button button-secondary csv-reconcile-only" id="csvReconcilePreviewButton" type="button">生成对账预览</button>
+            </div>
+            <section class="import-preview" id="csvImportPreview" hidden aria-live="polite"></section>
+            <div class="dialog-actions import-confirm-row"><button class="button button-primary csv-import-only" id="csvImportConfirmButton" type="button" hidden disabled>确认导入</button><button class="button button-primary csv-reconcile-only" id="csvReconcileConfirmButton" type="button" hidden disabled>确认仅入账勾选的 CSV 独有行</button></div>
+            <section class="reconciliation-preview" id="csvReconciliationPreview" hidden aria-live="polite"></section>
+          </section>
+          <section class="attachment-workspace panel" id="attachmentWorkspace" aria-labelledby="attachmentHeading" hidden>
+            <div class="panel-head"><div><h2 id="attachmentHeading">流水附件</h2><p class="panel-subtitle">选择一笔真实流水，再从本机选择收据或凭证。附件保存在当前账本。</p></div></div>
+            <div class="file-input-row attachment-controls">
+              <label><span>关联流水</span><select id="attachmentTransaction" required><option value="">先读取流水</option></select></label>
+              <label><span>开始日期</span><input id="attachmentStartDate" type="date"></label>
+              <label><span>结束日期</span><input id="attachmentEndDate" type="date"></label>
+              <button class="button button-secondary" id="loadAttachmentTransactions" type="button">读取流水</button>
+            </div>
+            <p class="schema-help" id="attachmentTransactionStatus">只显示当前账本中可读取的流水。</p>
+            <div class="file-input-row">
+              <label class="file-picker-label" id="attachmentFileLabel" for="attachmentFile">选择附件<input id="attachmentFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" aria-describedby="attachmentFileHelp"></label>
+              <button class="button button-secondary" id="attachFileButton" type="button" disabled>保存附件</button>
+              <button class="button button-quiet" id="listTransactionFilesButton" type="button" disabled>查看已有附件</button>
+            </div>
+            <p class="schema-help" id="attachmentFileHelp">支持 PDF、JPEG、PNG、WebP，单个文件不超过 10 MB。</p>
+            <p class="form-message" id="attachmentMessage" role="status" aria-live="polite"></p>
+            <div class="attachment-list" id="attachmentList" hidden></div>
+            <section class="attachment-preview" id="attachmentPreview" aria-live="polite" hidden></section>
+          </section>
+          <section class="feature-workspace panel" data-feature-group="maintenance">
+            <div class="panel-head"><div><h2>导出、备份与维护</h2><p class="panel-subtitle">先查看范围与目标，再确认文件或维护操作。</p></div></div>
+            <section class="backup-maintenance-panel" aria-labelledby="backupScheduleHeading">
+              <div class="panel-head"><div><h3 id="backupScheduleHeading">自动备份与恢复演练</h3><p class="panel-subtitle">状态来自本机维护记录；安装级设置不会写入备份 ZIP。</p></div><button class="button button-quiet" id="refreshBackupScheduleButton" type="button">刷新状态</button></div>
+              <form class="backup-schedule-form" id="backupScheduleForm">
+                <label class="backup-enabled-label"><input id="backupScheduleEnabled" type="checkbox"><span>启用自动备份</span></label>
+                <label><span>间隔天数</span><input id="backupScheduleInterval" type="number" min="1" max="365" value="7" required></label>
+                <label><span>保留份数</span><input id="backupScheduleRetention" type="number" min="1" max="90" value="12" required></label>
+                <button class="button button-secondary" id="saveBackupScheduleButton" type="submit">保存备份设置</button>
+              </form>
+              <dl class="backup-status-grid" id="backupScheduleStatus" aria-live="polite"><dt>状态</dt><dd>正在读取维护状态…</dd></dl>
+              <p class="form-message" id="backupScheduleMessage" role="status" aria-live="polite"></p>
+              <div class="backup-maintenance-actions"><button class="button button-quiet" id="runBackupDrillButton" type="button">运行恢复演练</button></div>
+            </section>
+            <section class="backup-upload-panel" id="backupUploadPanel" aria-labelledby="backupUploadHeading">
+              <div class="panel-head"><div><h3 id="backupUploadHeading">从 ZIP 备份恢复</h3><p class="panel-subtitle">选择文件后由本机服务校验，再进入来源账本映射和恢复预览。</p></div></div>
+              <div class="file-input-row">
+                <label class="file-picker-label" for="backupZipFile">选择备份 ZIP<input id="backupZipFile" type="file" accept=".zip,application/zip" aria-describedby="backupZipHelp"></label>
+                <button class="button button-secondary" id="uploadBackupZipButton" type="button">上传并进入预览</button>
+              </div>
+              <p class="schema-help" id="backupZipHelp">文件通过同源会话安全上传，不经 Base64 编码；ZIP 最大 256 MiB，展开的 database.sqlite3 最大 512 MiB，manifest 最大 64 KiB。</p>
+              <p class="form-message" id="backupZipMessage" role="status" aria-live="polite"></p>
+              <div class="backup-upload-summary" id="backupUploadSummary" hidden></div>
+            </section>
+            <div class="feature-actions" id="featureActions-maintenance"></div>
+            <p class="view-message" id="featureEmpty-maintenance" hidden>当前账号暂无此类可用操作。</p>
+            <section class="feature-result panel" id="featureResult-maintenance" aria-live="polite" hidden></section>
+          </section>
+        </section>
+
+        <section class="view-panel" id="securityView" aria-labelledby="securityHeading" hidden>
+          <h2 class="visually-hidden" id="securityHeading">授权与安全</h2>
+          <section class="accessible-ledgers panel" aria-labelledby="accessibleLedgerHeading">
+            <div class="panel-head"><div><h2 id="accessibleLedgerHeading">我可以进入的账本</h2><p class="panel-subtitle">显示已验证账号当前可进入的账本范围，不展示账本内部流水。</p></div></div>
+            <ul class="access-ledger-list" id="accessibleLedgers"><li class="empty-cell">正在读取已授权范围…</li></ul>
+          </section>
+          <section class="feature-workspace panel" data-feature-group="security" aria-labelledby="securityToolsHeading">
+            <div class="panel-head"><div><h2 id="securityToolsHeading">授权范围与访问记录</h2><p class="panel-subtitle">查看谁可以进入你的账本、你可以进入哪些账本，也可以管理自己的 MCP 主机权限。</p></div></div>
+            <section class="host-token-create-panel" id="hostTokenManagement" aria-labelledby="hostTokenCreateHeading">
+              <div class="panel-head"><div><h3 id="hostTokenCreateHeading">创建 MCP 主机授权</h3><p class="panel-subtitle">密钥只在创建或换发成功时显示一次；请立即复制到目标主机。</p></div><button class="button button-secondary" id="createHostTokenButton" type="button">创建授权</button></div>
+              <section class="one-time-token-panel" id="oneTimeHostTokenPanel" aria-live="polite" hidden>
+                <h4>一次性显示的主机密钥</h4>
+                <p class="schema-help">关闭或离开授权页后，页面会清除这份明文；之后只能换发新密钥。</p>
+                <div class="one-time-token-control"><input id="oneTimeHostTokenValue" type="text" readonly aria-label="新建主机密钥"><button class="button button-secondary" id="copyHostTokenButton" type="button">复制密钥</button></div>
+                <p class="form-message" id="oneTimeHostTokenMessage" role="status" aria-live="polite"></p>
+              </section>
+            </section>
+            <div class="feature-actions" id="featureActions-security"></div>
+            <p class="view-message" id="featureEmpty-security" hidden>当前账号暂无此类可用安全操作。</p>
+            <section class="feature-result panel" id="featureResult-security" aria-live="polite" hidden></section>
+          </section>
+          <section class="runtime-log-workspace panel" aria-labelledby="runtimeLogHeading">
+            <div class="panel-head"><div><h2 id="runtimeLogHeading">本机运行记录</h2><p class="panel-subtitle">查看本机操作的时间、来源、结果和请求编号。</p></div><button class="button button-secondary" id="refreshRuntimeLogButton" type="button">读取最新记录</button></div>
+            <div class="table-scroll"><table class="data-table runtime-log-table"><caption class="visually-hidden">已脱敏的本机运行记录</caption><thead><tr><th scope="col">时间</th><th scope="col">来源</th><th scope="col">操作</th><th scope="col">结果</th><th scope="col">请求编号</th></tr></thead><tbody id="runtimeLogRows"><tr><td colspan="5" class="empty-cell">点击“读取最新记录”。</td></tr></tbody></table></div>
+            <p class="view-message" id="runtimeLogMessage" role="status" aria-live="polite"></p>
+          </section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <dialog class="navigation-sheet" id="navigationDialog" aria-label="页面导航">
+    <div class="sheet-head"><strong>余序 · 页面导航</strong><button class="icon-button" id="closeNavigation" type="button" aria-label="关闭导航">×</button></div>
+    <p class="ledger-sheet-name" id="mobileAccountName">-</p>
+    <label class="account-picker-wrap mobile-account-picker" id="mobileAccountPickerWrap" hidden>
+      <span class="visually-hidden">选择已授权账本</span>
+      <select id="mobileAccountPicker" aria-label="选择已授权账本"></select>
+    </label>
+    <nav class="mobile-nav-list">
+      <button type="button" data-view="overview"><span>总览</span></button>
+      <button type="button" data-view="transactions"><span>流水与核账</span></button>
+      <button type="button" data-view="visualization" hidden><span>数据可视化</span></button>
+      <button type="button" data-view="reports" hidden><span>报表分析</span></button>
+      <button type="button" data-view="movements" hidden><span>支付与往来</span></button>
+      <button type="button" data-view="planning" hidden><span>项目预算与目标</span></button>
+      <button type="button" data-view="recurring" hidden><span>定期提醒</span></button>
+      <button type="button" data-view="maintenance" hidden><span>导出与维护</span></button>
+      <button type="button" data-view="security" hidden><span>授权与安全</span></button>
+    </nav>
+    <button class="restore-status mobile-restore-status" id="mobileRestoreStatusButton" type="button" hidden>恢复运行状态面板</button>
+    <button class="button button-quiet button-wide" id="mobileLogoutButton" type="button">退出登录</button>
+  </dialog>
+
+  <dialog class="entry-dialog" id="entryDialog" aria-labelledby="entryDialogTitle">
+    <form id="entryForm" novalidate>
+      <div class="dialog-head"><div><h2 id="entryDialogTitle">记一笔</h2><p class="panel-subtitle">可以一次录入多笔。金额使用人民币，最多 100 笔。</p></div><button class="icon-button" type="button" data-close-dialog="entryDialog" aria-label="关闭">×</button></div>
+      <div class="entry-rows" id="entryRows"></div>
+      <button class="button button-secondary" id="addEntryRowButton" type="button">＋ 添加一笔</button>
+      <p class="form-message" id="entryMessage" role="status" aria-live="polite"></p>
+      <div class="dialog-actions"><button class="button button-quiet" type="button" data-close-dialog="entryDialog">取消</button><button class="button button-primary" type="submit">保存流水</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="entry-dialog edit-dialog" id="editDialog" aria-labelledby="editDialogTitle">
+    <form id="editForm" novalidate>
+      <div class="dialog-head"><div><h2 id="editDialogTitle">更正流水</h2><p class="panel-subtitle">保存时校验记录版本；发生冲突会保留原账。</p></div><button class="icon-button" type="button" data-close-dialog="editDialog" aria-label="关闭">×</button></div>
+      <input type="hidden" name="transaction_id">
+      <input type="hidden" name="expected_version">
+      <label><span>收支方向</span><select name="kind"><option value="expense">支出</option><option value="income">收入</option></select></label>
+      <label><span>金额（元）</span><input name="amount" type="text" inputmode="decimal" required></label>
+      <label><span>日期</span><input name="occurred_on" type="date"></label>
+      <label><span>分类</span><select name="category_id"></select></label>
+      <label class="checkbox-label"><input name="estimated" type="checkbox"><span>估算金额</span></label>
+      <label><span>确认状态</span><select name="confirmation_status"><option value="confirmed">已确认</option><option value="pending">待确认</option></select></label>
+      <label><span>商家或项目</span><input name="merchant" type="text" maxlength="160"></label>
+      <label><span>标签，逗号分隔</span><input name="tags" type="text" maxlength="300"></label>
+      <label><span>备注</span><textarea name="note" rows="3" maxlength="1000"></textarea></label>
+      <p class="form-message" id="editMessage" role="status" aria-live="polite"></p>
+      <div class="dialog-actions"><button class="button button-quiet" type="button" data-close-dialog="editDialog">取消</button><button class="button button-primary" type="submit">保存更正</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="entry-dialog feature-dialog" id="featureDialog" aria-labelledby="featureDialogTitle">
+    <form id="featureForm" novalidate>
+      <div class="dialog-head"><div><h2 id="featureDialogTitle">操作</h2><p class="panel-subtitle" id="featureDialogDescription"></p></div><button class="icon-button" type="button" data-close-dialog="featureDialog" aria-label="关闭">×</button></div>
+      <div id="featureFields" class="schema-fields"></div>
+      <section class="feature-preview panel" id="featurePreview" hidden aria-live="polite"></section>
+      <p class="form-message" id="featureMessage" role="status" aria-live="polite"></p>
+      <div class="dialog-actions"><button class="button button-quiet" type="button" data-close-dialog="featureDialog">取消</button><button class="button button-secondary" id="featurePreviewButton" type="submit">检查信息</button><button class="button button-primary" id="featureConfirmButton" type="button" hidden>确认并执行</button></div>
+    </form>
+  </dialog>
+
+  <div class="notice" id="notice" role="status" aria-live="polite" hidden>
+    <span id="noticeText"></span>
+    <button class="text-button undo-button" id="undoButton" type="button" hidden>撤销</button>
+    <button class="icon-button notice-close" id="dismissNotice" type="button" aria-label="关闭提示">×</button>
+  </div>
+
+  <div class="status-dock" id="statusDock" hidden>
+    <button class="status-trigger" id="statusTrigger" type="button" aria-expanded="false" aria-controls="statusPanel">
+      <span class="status-dot" aria-hidden="true"></span><span>本机状态</span>
+    </button>
+    <section class="status-panel panel" id="statusPanel" aria-labelledby="statusHeading" hidden>
+      <div class="status-head">
+        <h2 id="statusHeading"><img class="brand-mark" src="./yuxu-icon.png" width="24" height="24" alt="">运行状态</h2>
+        <button class="icon-button" id="closeStatusPanel" type="button" aria-label="关闭状态面板">×</button>
+      </div>
+      <dl class="status-list" id="statusDetails"><div><dt>状态</dt><dd>尚未读取</dd></div></dl>
+      <section class="status-runtime-log" aria-labelledby="statusRuntimeLogHeading">
+        <div class="status-log-head"><h3 id="statusRuntimeLogHeading">最近运行记录</h3><button class="text-button" id="refreshStatusRuntimeLogButton" type="button">刷新</button></div>
+        <ul class="status-log-list" id="statusRuntimeLogRows" aria-live="polite"><li class="empty-cell">展开面板后读取脱敏记录。</li></ul>
+        <p class="status-log-message" id="statusRuntimeLogMessage" role="status" aria-live="polite"></p>
+      </section>
+      <label class="status-default-label" for="statusDefaultSelect">打开网页时</label>
+      <select id="statusDefaultSelect"><option value="closed">默认收起</option><option value="open">默认展开</option></select>
+      <button class="text-button hide-status" id="hideStatusButton" type="button">隐藏面板</button>
+      <p class="status-help">面板关闭时不显示运行记录；右键可隐藏整个面板，之后可从导航恢复。</p>
+    </section>
+  </div>
+</body>
+</html>

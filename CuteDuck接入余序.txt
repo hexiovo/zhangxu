@@ -1,0 +1,49 @@
+CuteDuck，请把「余序」接入为我个人使用的记账和查账工具。余序是 Windows 本机账本，MCP 服务名为 yuxu，连接方式为 stdio。请按下面的顺序接入。
+
+一、确认运行位置并注册 MCP
+
+先确认你的 MCP 执行进程能在这台 Windows 电脑上启动本机命令，并绑定到我的个人入口。如你运行在云端，或当前版本缺少本机 stdio 支持，请告诉我缺少哪项能力，以及你是否支持本机连接器。余序网页 http://127.0.0.1:8765/ 用于本机登录和授权，MCP 由下列命令启动。
+
+请按你的 MCP 配置格式登记。若支持 mcpServers JSON，可用这段配置：
+
+{
+  "mcpServers": {
+    "yuxu": {
+      "command": "py",
+      "args": ["-3.12", "-X", "utf8", "-B", "F:/桌面/程序/yuxu/run_yuxu.py", "mcp"]
+    }
+  }
+}
+
+本机 Python 3.12 已安装 mcp 2.3.0。MCP 会按需启动余序服务。默认数据目录为 %LOCALAPPDATA%\Yuxu，网页和 MCP 应以同一个 Windows 用户运行。如果我用的是独立安装，启动 MCP 时请沿用该安装网页使用的 YUXU_DATA_DIR、YUXU_RUNTIME_DIR 和 YUXU_PORT，确保连到同一个账本。
+
+二、配置我的个人令牌
+
+我会打开 F:/桌面/程序/yuxu/启动余序.cmd。如果是全新安装，我先在网页注册本机账号。随后我登录自己的账本，在「授权与安全」→「创建 MCP 主机授权」里创建名为 CuteDuck 的授权。
+
+请告诉我在你的哪个本机设置界面配置秘密变量，让我亲手填写真实令牌。把它作为 YUXU_TOKEN 注入 yuxu MCP 子进程的环境。真实令牌仅在受保护的秘密设置中录入。两位使用者各用自己的令牌，入口必须能核验发起者归属。如果走 QQ，只对绑定并核验过的本人私聊开放。首轮接入使用新令牌默认的 summary_read 权限。
+
+三、验证只读连接
+
+设置令牌后，重新连接 yuxu，执行 MCP 初始化和 tools/list，按工具清单中的 inputSchema 调用：
+
+1. get_current_account({})，确认返回的账本归属正确，并核对 data.host_permissions.scopes。
+2. get_workflow_guide({})，读取使用规则。
+3. list_accessible_accounts({})，核对可访问的账本。
+4. get_account_access_policy({})，核对访问授权。
+5. get_period_summary({"start_date":"2026-11-01","end_date":"2026-11-25"})，用起止日期验证本人账本的汇总读取。这两个日期可换为实际验证区间。省略 account_id 即使用本人账本。
+
+优先读取工具回执的 structuredContent，也可解析 content 中的 JSON 文本。只读验证以业务 status 为 ok 为准。联调回报只需说明运行位置、连接和只读测试结果、当前权限，以及需要我完成的步骤。失败时回报失败步骤和 error.code。
+
+四、按需启用明细和记账
+
+需要查明细或记账时，由我在余序网页为 CuteDuck 授权启用 detail_read 或 write，你再刷新工具列表。查明细用 search_transactions，可按日期、金额或类别筛选。读取单笔商家或备注时，由我在网页针对该宿主、流水和字段做一次授权。明确的收支记录用 add_transactions，金额 amount_minor 使用整数分，例如 18.50 元填 1850。金额缺失时先问我，或通过 upsert_transaction_draft 暂存，补齐后再用 commit_transaction_draft。写入联调请使用隔离账本。
+
+每次写入先生成并保存一个稳定 request_id，以业务回执 status 为 committed 确认记账成功。超时或结果为 unknown 时，先调用 get_request_status({"target_request_id":"原请求ID"}) 查回执。若回执仍无法确认写入，重试时沿用原 request_id 和原参数。共享 MCP 进程用明确流水 ID 或日期、金额等条件定位记录。跨账本读取只使用 list_accessible_accounts 返回的真实账本 ID，并在工具明确支持且已获相应授权时传入顶层 account_id。
+
+
+四、新版常用流程
+
+先用 get_workflow_guide({scenario:"record"})、"receipt"、"correct"、"reconcile" 或 "export" 查看已开放的操作。新宿主默认只有摘要读取权限。生成报表需在余序网页为该宿主开启 export_summary。要在本机聊天界面领取脱敏 PNG，再开启 export_artifact。调用 get_export_artifact({file_id, inline:true}) 后，优先显示 MCP 图片内容；没有图片显示能力时，把 review_url 提供给用户打开本机网页。
+
+用 stage_receipt_bookkeeping 提交用户已选取的图片或 PDF，可在本机用 Windows OCR 识别。按 missing_fields 补全草稿，向用户呈现候选重复和最终金额，经明确确认后再调用 commit_bookkeeping_draft。对账和含商家或备注的导出，用返回的 review_url 交由账本所有者在本机网页确认。
